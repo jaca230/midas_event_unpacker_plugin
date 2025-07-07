@@ -83,6 +83,8 @@ target_link_libraries(${PROJECT_NAME}
     AnalysisPipeline::analysis_pipeline
 )
 
+add_library(midas_event_unpacker_plugin::midas_event_unpacker_plugin ALIAS ${PROJECT_NAME})
+
 # --------------------- ROOT Dictionary Setup ---------------------
 function(append_target_includes_to_root_dict target_name)
   get_target_property(INCLUDE_DIRS ${target_name} INTERFACE_INCLUDE_DIRECTORIES)
