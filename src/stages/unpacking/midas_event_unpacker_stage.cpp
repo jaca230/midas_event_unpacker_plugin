@@ -3,6 +3,9 @@
 
 ClassImp(MidasEventUnpackerStage)
 
+MidasEventUnpackerStage::MidasEventUnpackerStage() = default;
+MidasEventUnpackerStage::~MidasEventUnpackerStage() = default;
+
 void MidasEventUnpackerStage::OnInit() {
     spdlog::info("[{}] Initializing internal AnalysisPipeline...", Name());
 
