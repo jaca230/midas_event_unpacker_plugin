@@ -5,6 +5,6 @@
 #pragma link off all functions;
 
 #pragma link C++ class MidasEventUnpackerStage+;
-#pragma link C++ class ProjectBaseMidsaUnpackerStage+;
+#pragma link C++ class ProjectBaseMidasUnpackerStage+;
 
 #endif
