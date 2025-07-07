@@ -1,0 +1,69 @@
+# Build directories and files
+/build/
+/bin/
+/lib/
+/CMakeFiles/
+/Makefile
+/CMakeCache.txt
+/*.cmake
+/*.dir
+/*.o
+/*.so
+/*.a
+/*.out
+/*.exe
+/*.dll
+/*.dylib
+
+# Generated files (e.g. moc, uic from Qt)
+moc_*.cpp
+ui_*.h
+qrc_*.cpp
+
+# IDE/editor metadata
+.vscode/
+.idea/
+*.code-workspace
+
+# Temporary files
+*.log
+*.tmp
+*.bak
+*.swp
+*.swo
+*.swn
+*~
+
+# Compiled object files
+*.obj
+*.gch
+*.pch
+
+# ROOT files
+*.root
+*.pcm
+
+# OS-specific files
+.DS_Store
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# Conan / vcpkg / other C++ package managers
+/conanbuild/
+/.conan/
+/vcpkg_installed/
+/CMakeUserPresets.json
+
+# Clang/Compiler cache
+/ccache/
+/.clangd
+
+# Coverage/test reports
+/coverage/
+/test-results/
+
+# Python virtualenv or scripts (if any helper tools exist)
+/venv/
+/__pycache__/
+/*.pyc

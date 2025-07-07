@@ -1,0 +1,4 @@
+@PACKAGE_INIT@
+
+set(_package_name "midas_event_unpacker_plugin")
+include("${CMAKE_CURRENT_LIST_DIR}/${_package_name}Targets.cmake")
