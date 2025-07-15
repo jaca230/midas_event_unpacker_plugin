@@ -3,15 +3,15 @@
 
 #include "stages/input/base_input_stage.h"
 #include "midasio.h"
-#include <any>
+#include <stdexcept>
 
 class ProjectBaseMidasUnpackerStage : public BaseInputStage {
 public:
     ProjectBaseMidasUnpackerStage();
     ~ProjectBaseMidasUnpackerStage() override;
 
-    // Receives externally injected input (expects TMEvent inside std::any)
-    void SetInput(std::any input) override;
+    // Receives externally injected input as InputBundle
+    void SetInput(const InputBundle& input) override;
 
     // Run unpacking on the most recent input
     void Process() final override;

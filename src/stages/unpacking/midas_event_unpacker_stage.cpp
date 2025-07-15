@@ -7,7 +7,7 @@ MidasEventUnpackerStage::MidasEventUnpackerStage() = default;
 MidasEventUnpackerStage::~MidasEventUnpackerStage() = default;
 
 void MidasEventUnpackerStage::OnInit() {
-    spdlog::info("[{}] Initializing internal AnalysisPipeline...", Name());
+    spdlog::debug("[{}] Initializing internal AnalysisPipeline...", Name());
 
     local_config_ = std::make_shared<ConfigManager>();
 
@@ -37,7 +37,7 @@ void MidasEventUnpackerStage::OnInit() {
         throw std::runtime_error("Failed to build internal pipeline");
     }
 
-    spdlog::info("[{}] Internal pipeline successfully built", Name());
+    spdlog::debug("[{}] Internal pipeline successfully built", Name());
 }
 
 void MidasEventUnpackerStage::ProcessMidasEvent(TMEvent& event) {
