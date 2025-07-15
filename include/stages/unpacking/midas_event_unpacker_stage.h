@@ -1,12 +1,12 @@
 #ifndef MIDAS_EVENT_UNPACKER_STAGE_H
 #define MIDAS_EVENT_UNPACKER_STAGE_H
 
-#include "stages/unpacking/project_base_midas_unpacker_stage.h"
+#include "stages/unpacking/base_midas_event_unpacker_stage.h"
 #include <memory>
 #include "config/config_manager.h"
 #include "pipeline/pipeline.h"
 
-class MidasEventUnpackerStage : public ProjectBaseMidasUnpackerStage {
+class MidasEventUnpackerStage : public BaseMidasEventUnpackerStage {
 public:
     MidasEventUnpackerStage();
     ~MidasEventUnpackerStage() override;

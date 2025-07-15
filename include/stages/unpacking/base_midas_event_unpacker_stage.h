@@ -1,14 +1,18 @@
-#ifndef PROJECT_BASE_MIDAS_UNPACKER_STAGE_H
-#define PROJECT_BASE_MIDAS_UNPACKER_STAGE_H
+#ifndef BASE_MIDAS_EVENT_UNPACKER_STAGE_H
+#define BASE_MIDAS_EVENT_UNPACKER_STAGE_H
 
 #include "stages/input/base_input_stage.h"
 #include "midasio.h"
 #include <stdexcept>
 
-class ProjectBaseMidasUnpackerStage : public BaseInputStage {
+/**
+ * BaseMidasEventUnpackerStage provides a base class for MIDAS unpacking stages
+ * that consume TMEvent via InputBundle and emit custom data products.
+ */
+class BaseMidasEventUnpackerStage : public BaseInputStage {
 public:
-    ProjectBaseMidasUnpackerStage();
-    ~ProjectBaseMidasUnpackerStage() override;
+    BaseMidasEventUnpackerStage();
+    ~BaseMidasEventUnpackerStage() override;
 
     // Receives externally injected input as InputBundle
     void SetInput(const InputBundle& input) override;
@@ -24,7 +28,7 @@ protected:
     // Subclasses implement MIDAS unpacking logic here
     virtual void ProcessMidasEvent(TMEvent& event) = 0;
 
-    ClassDefOverride(ProjectBaseMidasUnpackerStage, 1);
+    ClassDefOverride(BaseMidasEventUnpackerStage, 1);
 };
 
-#endif // PROJECT_BASE_MIDAS_UNPACKER_STAGE_H
+#endif // BASE_MIDAS_EVENT_UNPACKER_STAGE_H
