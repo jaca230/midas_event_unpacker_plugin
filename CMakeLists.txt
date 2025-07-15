@@ -9,7 +9,10 @@ set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 include(GNUInstallDirs)
 include(CMakePackageConfigHelpers)
 
-# Optional: suppress GCC warning for vendored code
+# --------------------- Options ---------------------
+option(USE_BUNDLED_MIDAS "Use the bundled MIDAS snapshot instead of system MIDASSYS" OFF)
+
+# --------------------- GCC Warnings ---------------------
 if(CMAKE_SOURCE_DIR STREQUAL PROJECT_SOURCE_DIR)
   if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
     add_compile_options(-Wno-stringop-overflow)
@@ -57,13 +60,34 @@ find_package(AnalysisPipeline REQUIRED)
 find_package(TBB REQUIRED)
 include(${ROOT_USE_FILE})
 
-# --------------------- Add vendored MIDAS snapshot ---------------------
-add_subdirectory(external/midas_snapshot)
+# --------------------- MIDAS Source Selection ---------------------
+if(USE_BUNDLED_MIDAS)
+  add_subdirectory(external/midas_snapshot)
+  set(MIDAS_INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/external/midas_snapshot/include)
+  set(MIDAS_LIBS midas_snapshot::midas_snapshot)
+else()
+  if(NOT DEFINED ENV{MIDASSYS})
+    message(FATAL_ERROR "System MIDAS selected but MIDASSYS is not defined in the environment.")
+  endif()
+
+  set(MIDASSYS_INCLUDE_DIRS
+    $ENV{MIDASSYS}/include
+    $ENV{MIDASSYS}/midasio
+  )
+  set(MIDASSYS_LIB_DIR $ENV{MIDASSYS}/lib)
+
+  set(MIDAS_INCLUDE_DIRS ${MIDASSYS_INCLUDE_DIRS})
+  set(MIDAS_LIBS
+    ${MIDASSYS_LIB_DIR}/libmfe.a
+    ${MIDASSYS_LIB_DIR}/libmidas.a
+  )
+endif()
 
 # --------------------- Sources ---------------------
 file(GLOB_RECURSE SOURCES CONFIGURE_DEPENDS src/*.cpp)
 
 add_library(${PROJECT_NAME} SHARED ${SOURCES})
+add_library(midas_event_unpacker_plugin::midas_event_unpacker_plugin ALIAS ${PROJECT_NAME})
 
 # --------------------- Include Paths ---------------------
 target_include_directories(${PROJECT_NAME}
@@ -71,19 +95,29 @@ target_include_directories(${PROJECT_NAME}
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
     $<INSTALL_INTERFACE:include>
 )
+if(USE_BUNDLED_MIDAS)
+  target_include_directories(${PROJECT_NAME}
+    PUBLIC
+      $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/external/midas_snapshot/include>
+      $<INSTALL_INTERFACE:include/midas_snapshot>
+  )
+else()
+  target_include_directories(${PROJECT_NAME}
+    PUBLIC
+      ${MIDAS_INCLUDE_DIRS}
+  )
+endif()
 
 # --------------------- Link Libraries ---------------------
 target_link_libraries(${PROJECT_NAME}
   PUBLIC
-    midas_snapshot::midas_snapshot
+    ${MIDAS_LIBS}
     spdlog::spdlog
     nlohmann_json::nlohmann_json
     ROOT::Core ROOT::RIO
     AnalysisPipelineStagesCore::analysis_pipeline_stages_core
     AnalysisPipeline::analysis_pipeline
 )
-
-add_library(midas_event_unpacker_plugin::midas_event_unpacker_plugin ALIAS ${PROJECT_NAME})
 
 # --------------------- ROOT Dictionary Setup ---------------------
 function(append_target_includes_to_root_dict target_name)
@@ -95,7 +129,7 @@ function(append_target_includes_to_root_dict target_name)
         if(EXISTS "${actual}")
           list(APPEND ROOT_DICTIONARY_INCLUDE_OPTIONS "-I${actual}")
         endif()
-      elseif(NOT dir MATCHES "^\\$")  # Skip generator expressions
+      elseif(NOT dir MATCHES "^\\$")
         if(EXISTS "${dir}")
           list(APPEND ROOT_DICTIONARY_INCLUDE_OPTIONS "-I${dir}")
         endif()
@@ -108,7 +142,14 @@ endfunction()
 set(ROOT_LINKDEF ${CMAKE_CURRENT_SOURCE_DIR}/include/LinkDef.h)
 set(ROOT_DICTIONARY_INCLUDE_OPTIONS "-I${CMAKE_CURRENT_SOURCE_DIR}/include")
 
-append_target_includes_to_root_dict(midas_snapshot::midas_snapshot)
+if(USE_BUNDLED_MIDAS)
+  append_target_includes_to_root_dict(midas_snapshot::midas_snapshot)
+else()
+  foreach(dir IN LISTS MIDASSYS_INCLUDE_DIRS)
+    list(APPEND ROOT_DICTIONARY_INCLUDE_OPTIONS "-I${dir}")
+  endforeach()
+endif()
+
 append_target_includes_to_root_dict(TBB::tbb)
 append_target_includes_to_root_dict(AnalysisPipelineStagesCore::analysis_pipeline_stages_core)
 append_target_includes_to_root_dict(AnalysisPipeline::analysis_pipeline)
@@ -132,15 +173,15 @@ target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 
 # --------------------- Install Rules ---------------------
 if(CMAKE_SOURCE_DIR STREQUAL PROJECT_SOURCE_DIR)
-  # Install the midas_snapshot target first
-  install(TARGETS midas_snapshot
-    EXPORT ${PROJECT_NAME}Targets
-    ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
-    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
-    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
-  )
+  if(USE_BUNDLED_MIDAS)
+    install(TARGETS midas_snapshot
+      EXPORT ${PROJECT_NAME}Targets
+      ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+      LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+      RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+    )
+  endif()
 
-  # Then install the main plugin target
   install(TARGETS ${PROJECT_NAME}
     EXPORT ${PROJECT_NAME}Targets
     LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
@@ -149,22 +190,21 @@ if(CMAKE_SOURCE_DIR STREQUAL PROJECT_SOURCE_DIR)
     INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
   )
 
-  # Install header-only interface targets
   install(TARGETS spdlog_header_only nlohmann_json_header_only
     EXPORT ${PROJECT_NAME}Targets
     INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/${PROJECT_NAME}
   )
 
-  # Install headers
   install(DIRECTORY include/
     DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/${PROJECT_NAME}
   )
 
-  install(DIRECTORY external/midas_snapshot/
-    DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/${PROJECT_NAME}/midas_snapshot
-  )
+  if(USE_BUNDLED_MIDAS)
+    install(DIRECTORY external/midas_snapshot/
+      DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/${PROJECT_NAME}/midas_snapshot
+    )
+  endif()
 
-  # Install export files
   install(EXPORT ${PROJECT_NAME}Targets
     FILE ${PROJECT_NAME}Targets.cmake
     NAMESPACE ${PROJECT_NAME}::

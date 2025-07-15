@@ -1,1 +1,1 @@
-# midas file unpacker app
+# midas event unpacker plugin

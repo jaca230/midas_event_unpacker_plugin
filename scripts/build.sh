@@ -9,6 +9,7 @@ CLEANUP_SCRIPT="$SCRIPT_DIR/cleanup.sh"
 # Default flags
 OVERWRITE=false
 JOBS_ARG="-j"  # Use all processors
+EXTRA_CMAKE_ARGS=()
 
 # Help message
 show_help() {
@@ -17,6 +18,7 @@ show_help() {
     echo "Options:"
     echo "  -o, --overwrite           Remove existing build directory before building"
     echo "  -j, --jobs <number>       Specify number of processors to use (default: all available)"
+    echo "  -b, --use-bundled-midas   Use bundled MIDAS instead of system MIDASSYS"
     echo "  -h, --help                Display this help message"
 }
 
@@ -35,6 +37,10 @@ while [[ "$#" -gt 0 ]]; do
                 JOBS_ARG="-j"
                 shift
             fi
+            ;;
+        -b|--use-bundled-midas)
+            EXTRA_CMAKE_ARGS+=("-DUSE_BUNDLED_MIDAS=ON")
+            shift
             ;;
         -h|--help)
             show_help
@@ -60,7 +66,7 @@ cd "$BUILD_DIR" || exit 1
 
 # Run CMake and Make
 echo "[build.sh] Running cmake in: $BUILD_DIR"
-cmake "$BASE_DIR"
+cmake "$BASE_DIR" "${EXTRA_CMAKE_ARGS[@]}"
 
 echo "[build.sh] Building with make $JOBS_ARG"
 make $JOBS_ARG
