@@ -1,7 +1,7 @@
 #ifndef MIDAS_EVENT_UNPACKER_STAGE_H
 #define MIDAS_EVENT_UNPACKER_STAGE_H
 
-#include "stages/input/base_input_stage.h"
+#include "analysis_pipeline/core/stages/input/base_input_stage.h"
 #include "midasio.h"
 #include <memory>
 #include <stdexcept>

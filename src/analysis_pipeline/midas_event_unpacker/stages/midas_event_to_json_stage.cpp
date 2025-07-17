@@ -1,5 +1,5 @@
 // MidasEventToJsonStage.cpp
-#include "stages/unpacking/midas_event_to_json_stage.h"
+#include "analysis_pipeline/midas_event_unpacker/stages/midas_event_to_json_stage.h"
 #include <sstream>
 #include <iomanip>
 #include <spdlog/spdlog.h>

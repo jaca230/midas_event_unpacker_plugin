@@ -1,4 +1,4 @@
-#include "stages/unpacking/midas_event_unpacker_stage.h"
+#include "analysis_pipeline/midas_event_unpacker/stages/midas_event_unpacker_stage.h"
 #include <stdexcept>
 
 ClassImp(MidasEventUnpackerStage)

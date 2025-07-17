@@ -2,9 +2,9 @@
 #ifndef MIDAS_EVENT_TO_BYTESTREAM_STAGE_H
 #define MIDAS_EVENT_TO_BYTESTREAM_STAGE_H
 
-#include "stages/unpacking/midas_event_unpacker_stage.h"
-#include "data_products/common/ByteStream.h"
-#include "data_products/common/JsonProduct.h"
+#include "analysis_pipeline/midas_event_unpacker/stages/midas_event_unpacker_stage.h"
+#include "analysis_pipeline/unpacker_core/data_products/ByteStream.h"
+#include "analysis_pipeline/unpacker_core/data_products/JsonProduct.h"
 #include <memory>
 
 class MidasEventToByteStreamStage : public MidasEventUnpackerStage {
