@@ -1,41 +1,41 @@
-#include "stages/unpacking/minimal_midas_event_unpacker_stage.h"
-#include <TTree.h>
+// MidasEventToJsonStage.cpp
+#include "stages/unpacking/midas_event_to_json_stage.h"
 #include <sstream>
 #include <iomanip>
-#include <chrono>
 #include <spdlog/spdlog.h>
-#include <TObjString.h>
 
-ClassImp(MinimalMidasEventUnpackerStage)
+ClassImp(MidasEventToJsonStage)
 
 using json = nlohmann::json;
 
-MinimalMidasEventUnpackerStage::MinimalMidasEventUnpackerStage() {
+MidasEventToJsonStage::MidasEventToJsonStage() {
     spdlog::debug("[{}] Constructor called", Name());
 }
 
-MinimalMidasEventUnpackerStage::~MinimalMidasEventUnpackerStage() {
+MidasEventToJsonStage::~MidasEventToJsonStage() {
     spdlog::debug("[{}] Destructor called", Name());
 }
 
-void MinimalMidasEventUnpackerStage::ProcessMidasEvent(TMEvent& event) {
-    spdlog::debug("[{}] ProcessMidasEvent called with event_id={}, serial_number={}",
-                  Name(), event.event_id, event.serial_number);
+void MidasEventToJsonStage::ProcessMidasEvent(std::shared_ptr<TMEvent> event) {
+    if (!event) {
+        spdlog::error("[{}] ProcessMidasEvent called with null event", Name());
+        return;
+    }
 
     json j;
-    j["event_id"] = event.event_id;
-    j["serial_number"] = event.serial_number;
-    j["trigger_mask"] = event.trigger_mask;
-    j["timestamp"] = event.time_stamp;
-    j["data_size"] = event.data_size;
-    j["event_header_size"] = event.event_header_size;
-    j["bank_header_flags"] = event.bank_header_flags;
+    j["event_id"] = event->event_id;
+    j["serial_number"] = event->serial_number;
+    j["trigger_mask"] = event->trigger_mask;
+    j["timestamp"] = event->time_stamp;
+    j["data_size"] = event->data_size;
+    j["event_header_size"] = event->event_header_size;
+    j["bank_header_flags"] = event->bank_header_flags;
 
-    event.FindAllBanks();
-    spdlog::debug("[{}] Found {} banks", Name(), event.banks.size());
+    event->FindAllBanks();
+    spdlog::debug("[{}] Found {} banks", Name(), event->banks.size());
 
     j["banks"] = json::array();
-    for (const auto& bank : event.banks) {
+    for (const auto& bank : event->banks) {
         spdlog::debug("[{}] Processing bank: name='{}', type={}, data_size={}",
                       Name(), bank.name, bank.type, bank.data_size);
 
@@ -43,36 +43,29 @@ void MinimalMidasEventUnpackerStage::ProcessMidasEvent(TMEvent& event) {
         jbank["name"] = bank.name;
         jbank["type"] = bank.type;
         jbank["data_size"] = bank.data_size;
+        jbank["data"] = decodeBankData(bank, *event);
 
-        auto decoded_data = decodeBankData(bank, event);
-
-        size_t data_length = 0;
-        if (decoded_data.is_string()) {
-            data_length = decoded_data.get<std::string>().size();
-        } else {
-            data_length = decoded_data.size();
-        }
-
-        spdlog::debug("[{}] Decoded bank data (type {}): size/length={}",
-                      Name(), bank.type, data_length);
-
-        jbank["data"] = std::move(decoded_data);
         j["banks"].push_back(std::move(jbank));
     }
 
-    auto jsonString = std::make_unique<TObjString>(j.dump().c_str());
+    // Create shared_ptr to JsonProduct object
+    auto jsonProduct = std::make_unique<dataProducts::JsonProduct>();
+    jsonProduct->jsonString = j.dump();
 
-    auto pdp = std::make_unique<PipelineDataProduct>();
-    pdp->setName("event_json");
-    pdp->setObject(std::move(jsonString));
-    pdp->addTag("unpacked_data");
-    pdp->addTag("built_by_minimal_midas_unpacker");
-    getDataProductManager()->addOrUpdate("event_json", std::move(pdp));
+    // Wrap in PipelineDataProduct
+    auto product = std::make_unique<PipelineDataProduct>();
+    product->setName("event_json");
+    product->setObject(std::move(jsonProduct));
+    product->addTag("unpacked_data");
+    product->addTag("built_by_midas_event_to_json_stage");
 
-    spdlog::debug("[{}] Created PipelineDataProduct for event_json", Name());
+    getDataProductManager()->addOrUpdate("event_json", std::move(product));
+
+    spdlog::debug("[{}] Created JsonProduct PipelineDataProduct for event_json", Name());
 }
 
-json MinimalMidasEventUnpackerStage::decodeBankData(const TMBank& bank, TMEvent& event) const {
+
+json MidasEventToJsonStage::decodeBankData(const TMBank& bank, const TMEvent& event) const {
     const char* bankData = event.GetBankData(&bank);
     if (!bankData || bank.data_size == 0) {
         spdlog::warn("[{}] Bank '{}' has null data or zero size", Name(), bank.name);
@@ -151,7 +144,7 @@ json MinimalMidasEventUnpackerStage::decodeBankData(const TMBank& bank, TMEvent&
     return dataArray;
 }
 
-std::string MinimalMidasEventUnpackerStage::toHexString(const char* data, size_t size) const {
+std::string MidasEventToJsonStage::toHexString(const char* data, size_t size) const {
     std::ostringstream oss;
     for (size_t i = 0; i < size; ++i) {
         oss << std::hex << std::setw(2) << std::setfill('0')
@@ -162,6 +155,6 @@ std::string MinimalMidasEventUnpackerStage::toHexString(const char* data, size_t
     return hexStr;
 }
 
-std::string MinimalMidasEventUnpackerStage::Name() const {
-    return "MinimalMidasEventUnpackerStage";
+std::string MidasEventToJsonStage::Name() const {
+    return "MidasEventToJsonStage";
 }

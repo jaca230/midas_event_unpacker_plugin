@@ -1,51 +1,26 @@
 #include "stages/unpacking/midas_event_unpacker_stage.h"
-#include <spdlog/spdlog.h>
+#include <stdexcept>
 
 ClassImp(MidasEventUnpackerStage)
 
 MidasEventUnpackerStage::MidasEventUnpackerStage() = default;
 MidasEventUnpackerStage::~MidasEventUnpackerStage() = default;
 
-void MidasEventUnpackerStage::OnInit() {
-    spdlog::debug("[{}] Initializing internal AnalysisPipeline...", Name());
-
-    local_config_ = std::make_shared<ConfigManager>();
-
-    // Correct usage of nlohmann::json::contains instead of isMember
-    if (parameters_.contains("pipeline_config")) {
-        nlohmann::json pipelineJson = parameters_["pipeline_config"];
-        if (!local_config_->addJsonObject(pipelineJson)) {
-            throw std::runtime_error("Failed to load inline pipeline_config");
-        }
-    } 
-    else if (parameters_.contains("pipeline_config_file")) {
-        std::string path = parameters_["pipeline_config_file"].get<std::string>();
-        if (!local_config_->loadFiles({path})) {
-            throw std::runtime_error("Failed to load pipeline_config_file: " + path);
-        }
-    } 
-    else {
-        throw std::runtime_error("midas_event_unpacker_stage: no pipeline config provided in parameters");
+void MidasEventUnpackerStage::SetInput(const InputBundle& input) {
+    if (!input.has<std::shared_ptr<TMEvent>>("TMEvent")) {
+        throw std::runtime_error("MidasEventUnpackerStage::SetInput - InputBundle missing TMEvent");
     }
-
-    if (!local_config_->validate()) {
-        throw std::runtime_error("Internal pipeline configuration failed validation");
-    }
-
-    local_pipeline_ = std::make_unique<Pipeline>(local_config_);
-    if (!local_pipeline_->buildFromConfig()) {
-        throw std::runtime_error("Failed to build internal pipeline");
-    }
-
-    spdlog::debug("[{}] Internal pipeline successfully built", Name());
+    auto event = input.get<std::shared_ptr<TMEvent>>("TMEvent");
+    SetCurrentEvent(event);
 }
 
-void MidasEventUnpackerStage::ProcessMidasEvent(TMEvent& event) {
-    spdlog::debug("[{}] ProcessMidasEvent called", Name());
-    //1. Turn TMEvent into bytestream
-
-    //2. Pass bytestream as input to the internal pipeline
-
-    //3. Extract output and set data products for external pipeline
+void MidasEventUnpackerStage::SetCurrentEvent(std::shared_ptr<TMEvent> event) {
+    current_event_ = std::move(event);
 }
 
+void MidasEventUnpackerStage::Process() {
+    if (!current_event_) {
+        throw std::runtime_error("MidasEventUnpackerStage: current_event_ not set");
+    }
+    ProcessMidasEvent(current_event_);
+}

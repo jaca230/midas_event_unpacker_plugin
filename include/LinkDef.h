@@ -4,8 +4,8 @@
 #pragma link off all classes;
 #pragma link off all functions;
 
-#pragma link C++ class BaseMidasEventUnpackerStage+;
-#pragma link C++ class MinimalMidasEventUnpackerStage+;
+#pragma link C++ class MidasEventToJsonStage+;
+#pragma link C++ class MidasEventToByteStreamStage+;
 #pragma link C++ class MidasEventUnpackerStage+;
 
 #endif

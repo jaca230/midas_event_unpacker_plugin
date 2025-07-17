@@ -1,26 +1,33 @@
 #ifndef MIDAS_EVENT_UNPACKER_STAGE_H
 #define MIDAS_EVENT_UNPACKER_STAGE_H
 
-#include "stages/unpacking/base_midas_event_unpacker_stage.h"
+#include "stages/input/base_input_stage.h"
+#include "midasio.h"
 #include <memory>
-#include "config/config_manager.h"
-#include "pipeline/pipeline.h"
+#include <stdexcept>
 
-class MidasEventUnpackerStage : public BaseMidasEventUnpackerStage {
+/**
+ * MidasEventUnpackerStage provides a base class for MIDAS unpacking stages
+ * that consume TMEvent via InputBundle and emit custom data products.
+ */
+class MidasEventUnpackerStage : public BaseInputStage {
 public:
     MidasEventUnpackerStage();
     ~MidasEventUnpackerStage() override;
 
-    void ProcessMidasEvent(TMEvent& event) override;
+    // Receives externally injected input as InputBundle
+    void SetInput(const InputBundle& input) override;
 
-    std::string Name() const override { return "MidasEventUnpackerStage"; }
+    // Run unpacking on the most recent input
+    void Process() final override;
 
 protected:
-    void OnInit() override;
+    void SetCurrentEvent(std::shared_ptr<TMEvent> event);
 
-private:
-    std::shared_ptr<ConfigManager> local_config_;
-    std::unique_ptr<Pipeline> local_pipeline_;
+    std::shared_ptr<TMEvent> current_event_;
+
+    // Subclasses implement MIDAS unpacking logic here
+    virtual void ProcessMidasEvent(std::shared_ptr<TMEvent> event) = 0;
 
     ClassDefOverride(MidasEventUnpackerStage, 1);
 };

@@ -19,14 +19,22 @@ if(CMAKE_SOURCE_DIR STREQUAL PROJECT_SOURCE_DIR)
   endif()
 endif()
 
-# --------------------- CPM Dependencies ---------------------
+# --------------------- CPM Setup ---------------------
 include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/CPM.cmake)
 
+# Use externally-defined versions if set, else fallback
+set(CPM_SPDLOG_VERSION "1.13.0" CACHE STRING "spdlog version")
+set(CPM_NLOHMANN_JSON_VERSION "3.11.3" CACHE STRING "nlohmann_json version")
+
+# --------------------- spdlog ---------------------
 CPMAddPackage(
   NAME spdlog
   GITHUB_REPOSITORY gabime/spdlog
-  VERSION 1.13.0
-  OPTIONS "SPDLOG_BUILD_EXAMPLES OFF" "SPDLOG_BUILD_TESTS OFF" "SPDLOG_FMT_EXTERNAL OFF"
+  VERSION ${CPM_SPDLOG_VERSION}
+  OPTIONS
+    "SPDLOG_BUILD_EXAMPLES OFF"
+    "SPDLOG_BUILD_TESTS OFF"
+    "SPDLOG_FMT_EXTERNAL OFF"
   DOWNLOAD_ONLY YES
 )
 
@@ -34,14 +42,16 @@ if(spdlog_ADDED)
   add_library(spdlog_header_only INTERFACE)
   target_include_directories(spdlog_header_only INTERFACE
     $<BUILD_INTERFACE:${spdlog_SOURCE_DIR}/include>
+    $<INSTALL_INTERFACE:include>
   )
   add_library(spdlog::spdlog ALIAS spdlog_header_only)
 endif()
 
+# --------------------- nlohmann_json ---------------------
 CPMAddPackage(
   NAME nlohmann_json
   GITHUB_REPOSITORY nlohmann/json
-  VERSION 3.11.3
+  VERSION ${CPM_NLOHMANN_JSON_VERSION}
   DOWNLOAD_ONLY YES
 )
 
@@ -49,6 +59,7 @@ if(nlohmann_json_ADDED)
   add_library(nlohmann_json_header_only INTERFACE)
   target_include_directories(nlohmann_json_header_only INTERFACE
     $<BUILD_INTERFACE:${nlohmann_json_SOURCE_DIR}/include>
+    $<INSTALL_INTERFACE:include>
   )
   add_library(nlohmann_json::nlohmann_json ALIAS nlohmann_json_header_only)
 endif()
@@ -56,8 +67,7 @@ endif()
 # --------------------- Required Packages ---------------------
 find_package(ROOT REQUIRED COMPONENTS Core RIO)
 find_package(AnalysisPipelineStagesCore REQUIRED)
-find_package(AnalysisPipeline REQUIRED)
-find_package(TBB REQUIRED)
+find_package(unpacker_data_products_core REQUIRED)
 include(${ROOT_USE_FILE})
 
 # --------------------- MIDAS Source Selection ---------------------
@@ -116,7 +126,7 @@ target_link_libraries(${PROJECT_NAME}
     nlohmann_json::nlohmann_json
     ROOT::Core ROOT::RIO
     AnalysisPipelineStagesCore::analysis_pipeline_stages_core
-    AnalysisPipeline::analysis_pipeline
+    unpacker_data_products_core::unpacker_data_products_core
 )
 
 # --------------------- ROOT Dictionary Setup ---------------------
@@ -150,9 +160,8 @@ else()
   endforeach()
 endif()
 
-append_target_includes_to_root_dict(TBB::tbb)
 append_target_includes_to_root_dict(AnalysisPipelineStagesCore::analysis_pipeline_stages_core)
-append_target_includes_to_root_dict(AnalysisPipeline::analysis_pipeline)
+append_target_includes_to_root_dict(unpacker_data_products_core::unpacker_data_products_core)
 
 file(GLOB_RECURSE STAGE_HEADERS CONFIGURE_DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/include/stages/*.h)
 file(GLOB_RECURSE DATAPRODUCT_HEADERS CONFIGURE_DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/include/data_products/*.h)
